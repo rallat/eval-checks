@@ -3,39 +3,38 @@
 > Fail-closed grading for agent evals: canaries, fuses, and control cases. A small TypeScript
 > engine and CLI (zero dependencies) that runs your agent as a real subprocess,
 > grades the JSON artifact it emits, and is built so that when the *grader* breaks, the build
-> breaks. I put the failure modes and the limits here alongside the features, so you can decide
-> against real objections whether it earns a place in your stack.
+> breaks. I put the failure modes and the limits here alongside the features, so you can judge
+> the argument against real objections.
 
 If you keep one sentence from this README, keep it from here: **an eval harness that can
 silently stop failing things is worse than no harness, because it converts absent evidence into
 green checkmarks.**
-This is study of evals, I wrote to understand evals better.
+
+This is a study of evals. I wrote it to understand the problem better, so the engine exists to
+make the argument concrete and testable. It is not a product looking for adopters.
 
 ## Why this can help you
 
-*Four problems you have probably already had, and what the library does about each one. The
-limits are in [When this is the wrong tool](#when-this-is-the-wrong-tool), and I would read that
-before adopting anything.*
+*Four failure modes the study examines, and the mechanism it puts against each one. The limits
+are in [When this is the wrong tool](#when-this-is-the-wrong-tool), and they are part of the
+finding, not a disclaimer.*
 
-You are most likely here because you already run evals and you are not sure you can still trust
-them. That is the correct worry, and it is hard to resolve by reading your own suite: a suite
-that measures nothing looks exactly like a suite that measures everything. So the question this
-library answers is not "did my agent pass". It is "would this suite still be able to tell me if
-my agent stopped passing".
+The question here is not "did my agent pass". It is "would this suite still be able to tell me
+if my agent stopped passing". That question is hard to answer by reading your own suite, because
+a suite that measures nothing looks exactly like a suite that measures everything. So the answer
+is written as code: a working engine, small enough to read end to end, where every discipline is
+enforced by a test that fails when the discipline lapses.
 
-| If this sounds familiar | What the engine does | What you get |
+| Failure mode | The mechanism against it | What it demonstrates |
 |---|---|---|
-| "The suite is green, but I cannot tell whether it still checks anything." | Every check kind ships a known-pass **and** a known-fail fixture, and a meta-test asserts the canary registry covers the check registry exactly. | A grader that stopped failing things breaks the build, instead of passing your agent. |
-| "Someone renamed a field and nothing turned red." | Path resolution fails closed. A missing path, an empty segment, and every inherited prototype member are failed assertions, never skipped ones. | The rename turns red on the pull request that caused it. |
-| "Our pass rate moved and nobody can say why." | A tripped token fuse aborts the run with an infrastructure error and records **zero** unrun samples as failures. Timeouts are recorded as timeouts. | Your trend line measures the agent, and not your spend or your flaky runner. |
-| "The eval inherits every credential the CI runner holds." | The subprocess receives PATH, HOME, locale, and proxy/TLS configuration. Nothing else. Credentials are opt-in by name or by prefix. | An injected instruction can reach only what you handed over on purpose. |
+| The suite is green, and nobody can tell whether it still checks anything. | Every check kind ships a known-pass **and** a known-fail fixture, and a meta-test asserts the canary registry covers the check registry exactly. | A grader that stopped failing things can be made to break the build. |
+| Someone renames a field and nothing turns red. | Path resolution fails closed. A missing path, an empty segment, and every inherited prototype member are failed assertions, never skipped ones. | Vacuous passes are a resolver design choice, not an inevitability. |
+| A pass rate moves and nobody can say why. | A tripped token fuse aborts the run with an infrastructure error and records **zero** unrun samples as failures. Timeouts are recorded as timeouts. | Infrastructure noise and agent regression can stay separate facts. |
+| The eval inherits every credential the CI runner holds. | The subprocess receives PATH, HOME, locale, and proxy/TLS configuration. Nothing else. Credentials are opt-in by name or by prefix. | Closing the injection surface costs one allowlist on day one. |
 
-Adopt it if three things are true: your agent runs as a subprocess, it prints JSON, and CI
-branches on the verdict. The suite is plain JSON, so an agent can author and repair its own
-cases, and the four exit codes keep "the harness broke" separate from "the agent regressed".
-
-Cost of finding out: one clone and two commands, below. The whole engine is about 1,000 lines,
-so you can read all of it before you decide.
+Three things here are worth taking, in this order: the disciplines, the tests that enforce them,
+and the code. The engine is about 1,000 lines, so you can read all of it, and the demo below
+runs in one clone and two commands.
 
 ## The problem: green walls
 
