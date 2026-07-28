@@ -1,0 +1,53 @@
+{
+  "version": "eval-checks.suite/v1",
+  "command": ["node", "examples/fake-agent.mjs"],
+  "cases": [
+    {
+      "caseId": "plan-shape",
+      "description": "A healthy run: the plan carries steps, tests, and risks.",
+      "args": ["--goal", "add rate limiting"],
+      "grading": {
+        "all": [
+          { "kind": "artifact-valid" },
+          {
+            "kind": "assertions",
+            "assert": [
+              { "path": "goal", "op": "contains", "value": "rate limiting" },
+              { "path": "steps", "op": "lengthAtLeast", "value": 2 },
+              { "path": "steps[*].test", "op": "exists" },
+              { "path": "risks", "op": "lengthAtLeast", "value": 1 }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "caseId": "control-drop-risks",
+      "description": "Control: an artifact with no risks MUST fail grading.",
+      "args": ["--goal", "add rate limiting", "--defect", "drop-risks"],
+      "expect": "fail",
+      "grading": {
+        "all": [
+          {
+            "kind": "assertions",
+            "assert": [{ "path": "risks", "op": "lengthAtLeast", "value": 1 }]
+          }
+        ]
+      }
+    },
+    {
+      "caseId": "control-no-tests",
+      "description": "Control: steps without tests MUST fail grading (missing paths fail closed).",
+      "args": ["--goal", "add rate limiting", "--defect", "no-tests"],
+      "expect": "fail",
+      "grading": {
+        "all": [
+          {
+            "kind": "assertions",
+            "assert": [{ "path": "steps[*].test", "op": "exists" }]
+          }
+        ]
+      }
+    }
+  ]
+}
