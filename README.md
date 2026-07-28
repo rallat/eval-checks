@@ -9,6 +9,7 @@
 If you keep one sentence from this README, keep it from here: **an eval harness that can
 silently stop failing things is worse than no harness, because it converts absent evidence into
 green checkmarks.**
+This is study of evals, I wrote to understand evals better.
 
 ## Why this can help you
 
