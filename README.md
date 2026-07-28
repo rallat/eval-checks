@@ -10,6 +10,32 @@ If you keep one sentence from this README, keep it from here: **an eval harness 
 silently stop failing things is worse than no harness, because it converts absent evidence into
 green checkmarks.**
 
+## Why this can help you
+
+*Four problems you have probably already had, and what the library does about each one. The
+limits are in [When this is the wrong tool](#when-this-is-the-wrong-tool), and I would read that
+before adopting anything.*
+
+You are most likely here because you already run evals and you are not sure you can still trust
+them. That is the correct worry, and it is hard to resolve by reading your own suite: a suite
+that measures nothing looks exactly like a suite that measures everything. So the question this
+library answers is not "did my agent pass". It is "would this suite still be able to tell me if
+my agent stopped passing".
+
+| If this sounds familiar | What the engine does | What you get |
+|---|---|---|
+| "The suite is green, but I cannot tell whether it still checks anything." | Every check kind ships a known-pass **and** a known-fail fixture, and a meta-test asserts the canary registry covers the check registry exactly. | A grader that stopped failing things breaks the build, instead of passing your agent. |
+| "Someone renamed a field and nothing turned red." | Path resolution fails closed. A missing path, an empty segment, and every inherited prototype member are failed assertions, never skipped ones. | The rename turns red on the pull request that caused it. |
+| "Our pass rate moved and nobody can say why." | A tripped token fuse aborts the run with an infrastructure error and records **zero** unrun samples as failures. Timeouts are recorded as timeouts. | Your trend line measures the agent, and not your spend or your flaky runner. |
+| "The eval inherits every credential the CI runner holds." | The subprocess receives PATH, HOME, locale, and proxy/TLS configuration. Nothing else. Credentials are opt-in by name or by prefix. | An injected instruction can reach only what you handed over on purpose. |
+
+Adopt it if three things are true: your agent runs as a subprocess, it prints JSON, and CI
+branches on the verdict. The suite is plain JSON, so an agent can author and repair its own
+cases, and the four exit codes keep "the harness broke" separate from "the agent regressed".
+
+Cost of finding out: one clone and two commands, below. The whole engine is about 1,000 lines,
+so you can read all of it before you decide.
+
 ## The problem: green walls
 
 *Why "my evals pass" is often a claim about the harness, not the agent.*
@@ -38,8 +64,8 @@ the parent environment, including every credential the CI runner holds. An eval 
 fixture-driven commands is an injection surface. Closing it costs nothing on day one and a
 migration later.
 
-This library is a deliberate answer to those four, and the tests are the point: about 700 lines
-of them against about 600 lines of engine.
+This library is a deliberate answer to those four, and the tests are the point: about 600 lines
+of them against about 760 lines of engine.
 
 ## The five disciplines
 
@@ -240,7 +266,7 @@ here than in production.*
   pretend to solve.
 
 The honest core: most eval effort goes into the agent, and almost none into proving the harness
-itself still works. These 600 lines are the almost-none, made explicit.
+itself still works. These 1,000 lines are the almost-none, made explicit.
 
 ## What would move me
 
